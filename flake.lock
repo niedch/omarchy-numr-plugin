@@ -1,0 +1,45 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1787209939,
+        "narHash": "sha256-WvvHR4kSQLAbtouMC/ruZ5UpLwlUcY3K4FAllMN+yGk=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "391b592eb44808b3bd0cb80bb71b63a5a118b8bb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "omarchy": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787400734,
+        "narHash": "sha256-DoAFZZnSRG0bxKumWwmbtyDXLJVf7PmLR5bzUv/1tl4=",
+        "owner": "basecamp",
+        "repo": "omarchy",
+        "rev": "c539f036aa8423e9178c3b2d3842adec5d412250",
+        "type": "github"
+      },
+      "original": {
+        "owner": "basecamp",
+        "ref": "quattro",
+        "repo": "omarchy",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "omarchy": "omarchy"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

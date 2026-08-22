@@ -1,0 +1,65 @@
+[tasks.run-quickshell]
+description = "Launch QuickShell with dev-shell.qml"
+run = """
+if [ -z "$OMARCHY_PATH" ]; then
+  echo -e "\\033[1;31mError: \\$OMARCHY_PATH is not defined in the shell environment.\\033[0m"
+  echo -e "Make sure you are running from inside the 'nix develop' shell."
+  exit 1
+fi
+
+if [ ! -d "$OMARCHY_PATH" ]; then
+  echo -e "\\033[1;31mError: Upstream QuickShell source not found at $OMARCHY_PATH.\\033[0m"
+  exit 1
+fi
+
+DEV_DIR="$PWD/.dev"
+rm -rf "$DEV_DIR"
+mkdir -p "$DEV_DIR"
+
+# Copy all official upstream files into the .dev folder
+cp -r "$OMARCHY_PATH"/* "$DEV_DIR"/
+chmod -R u+w "$DEV_DIR"
+
+# Isolate HOME to the .dev folder so we don't load/modify the user's real personal shell.json config and state
+export HOME="$DEV_DIR"
+
+# Inject our custom shell.json layout into the isolated user configuration directory
+mkdir -p "$DEV_DIR/.config/omarchy"
+cat <<EOF > "$DEV_DIR/.config/omarchy/shell.json"
+{
+  "version": 1,
+  "bar": {
+    "position": "top",
+    "layout": {
+      "left": [
+        { "id": "omarchy.menu" },
+        { "id": "omarchy.workspaces" }
+      ],
+      "center": [
+        { "id": "omarchy.clock" }
+      ],
+      "right": [
+        { "id": "nic.numr" },
+        { "id": "omarchy.tray" },
+        { "id": "omarchy.audio" },
+        { "id": "omarchy.network" },
+        { "id": "omarchy.power" }
+      ]
+    }
+  },
+  "plugins": []
+}
+EOF
+
+# Symlink our workspace repository into the isolated user plugins directory under .dev/.config/omarchy/plugins
+# This registers it as a third-party plugin which handles symbolic links natively
+mkdir -p "$DEV_DIR/.config/omarchy/plugins"
+ln -sf "$PWD" "$DEV_DIR/.config/omarchy/plugins/omarchy-numr-plugin"
+
+# Export environments
+export OMARCHY_PATH="$DEV_DIR"
+export QS_CONFIG_PATH="$DEV_DIR/shell"
+export QML2_IMPORT_PATH="$DEV_DIR/shell:$QML2_IMPORT_PATH"
+
+quickshell "$@"
+"""
