@@ -29,7 +29,7 @@ cat <<EOF > "$DEV_DIR/.config/omarchy/shell.json"
 {
   "version": 1,
   "bar": {
-    "position": "left",
+    "position": "top",
     "layout": {
       "center": [
         { "id": "nic.numr" }
