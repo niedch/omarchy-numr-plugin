@@ -7,7 +7,7 @@
   "description": "Natural language calculator powered by numr-cli",
   "kinds": ["bar-widget"],
   "entryPoints": {
-    "barWidget": "NumrPanel.qml"
+    "barWidget": "numr-plugin/NumrPanel.qml"
   },
   "barWidget": {
     "displayName": "Numr",
