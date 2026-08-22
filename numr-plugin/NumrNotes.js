@@ -103,7 +103,8 @@ const parseNotes = raw => {
     let activeNoteId = String(parsed.activeNoteId ?? "");
     if (findIndex(notes, activeNoteId) < 0) activeNoteId = "";
     return { schemaVersion: 1, activeNoteId, notes };
-  } catch {
+  } catch (error) {
+    void error;
     return { schemaVersion: 1, activeNoteId: "", notes: [] };
   }
 };

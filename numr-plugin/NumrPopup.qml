@@ -10,7 +10,6 @@ KeyboardPanel {
     id: popup
 
     // --- Interface Properties ---
-    required property var bar
     required property var notesModel
     required property var resultModel
     property int selectedNoteIndex: 0

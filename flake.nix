@@ -31,6 +31,7 @@
           libxkbcommon
           curl
           jq
+          watchexec
           bluetui
           wiremix
           voxtype
