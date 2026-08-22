@@ -57,7 +57,7 @@ quickshell "$@"
 description = "Lint JavaScript and QML files"
 run = """
 eslint numr-plugin/*.js
-qmllint numr-plugin/*.qml
+qmllint -E numr-plugin/*.qml
 """
 
 [tasks.format]

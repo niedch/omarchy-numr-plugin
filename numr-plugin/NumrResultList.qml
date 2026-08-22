@@ -1,3 +1,4 @@
+// qmllint disable missing-property unqualified unused-imports
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

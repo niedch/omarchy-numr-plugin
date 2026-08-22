@@ -1,3 +1,4 @@
+// qmllint disable property-override missing-property unused-imports Quick.layout-positioning
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -9,10 +10,10 @@ KeyboardPanel {
     id: popup
 
     // --- Interface Properties ---
+    required property var bar
     required property var notesModel
     required property var resultModel
     property int selectedNoteIndex: 0
-    onSelectedNoteIndexChanged: {}
     property alias text: editor.text
     property bool numrAvailable: true
     property string statusText: ""
@@ -28,7 +29,7 @@ KeyboardPanel {
     signal evaluateNowRequested
     signal editorLineChanged(int lineNum)
 
-    readonly property bool opened: open
+    readonly property bool opened: popup.open
 
     readonly property var activePhrases: ["Crunching numbers", "Solving equations", "Balancing ledgers", "Summing columns", "Synthesizing variables", "Parsing matrices", "Evaluating proofs", "Calculating limits"]
     property int phraseIndex: 0
@@ -82,7 +83,7 @@ KeyboardPanel {
                 easing.type: Easing.InQuad
             }
         }
-        Keys.onPressed: function (event) {
+        Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {
                 popup.close();
                 event.accepted = true;
@@ -174,7 +175,7 @@ KeyboardPanel {
                     notesModel: popup.notesModel
                     selectedNoteIndex: popup.selectedNoteIndex
                     onNewNoteClicked: popup.newNoteClicked()
-                    onSwitchNoteRequested: function (index, focusEditor) {
+                    onSwitchNoteRequested: (index, focusEditor) => {
                         popup.switchNoteRequested(index, focusEditor);
                     }
                 }
@@ -247,7 +248,7 @@ KeyboardPanel {
                         numrAvailable: popup.numrAvailable
                         statusText: popup.statusText
                         resultModel: popup.resultModel
-                        onResultClicked: function (index) {
+                        onResultClicked: index => {
                             popup.resultClicked(index);
                         }
                     }

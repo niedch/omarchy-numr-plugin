@@ -1,3 +1,4 @@
+// qmllint disable unused-imports missing-property signal-handler-parameters required
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

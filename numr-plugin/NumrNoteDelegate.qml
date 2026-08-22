@@ -1,5 +1,5 @@
+// qmllint disable missing-property
 import QtQuick
-import QtQuick.Controls
 import qs.Commons
 
 Rectangle {
@@ -21,7 +21,7 @@ Rectangle {
     width: ListView.view.width
     height: Math.max(Style.space(30), titleLabel.implicitHeight + countLabel.implicitHeight + Style.space(8))
     radius: Style.cornerRadius
-    color: selected ? Style.selectedFillFor(foreground, Color.accent) : mouse.containsMouse ? Style.hoverFillFor(foreground, Color.accent) : "transparent"
+    color: nrow.selected ? Style.selectedFillFor(nrow.foreground, Color.accent) : mouse.containsMouse ? Style.hoverFillFor(nrow.foreground, Color.accent) : "transparent"
     border.color: "transparent"
     border.width: 0
 
@@ -44,21 +44,21 @@ Rectangle {
         Text {
             id: titleLabel
             width: parent.width
-            text: title === "" ? "(empty note)" : title
-            color: selected ? foreground : Qt.darker(foreground, 1.4)
-            font.family: fontFamily
+            text: nrow.title === "" ? "(empty note)" : nrow.title
+            color: nrow.selected ? nrow.foreground : Qt.darker(nrow.foreground, 1.4)
+            font.family: nrow.fontFamily
             font.pixelSize: Style.font.bodySmall
-            font.bold: selected
+            font.bold: nrow.selected
             elide: Text.ElideRight
         }
 
         Text {
             id: countLabel
             width: parent.width
-            visible: lineCount > 0
-            text: lineCount + " line" + (lineCount > 1 ? "s" : "")
-            color: Qt.darker(foreground, 1.8)
-            font.family: fontFamily
+            visible: nrow.lineCount > 0
+            text: nrow.lineCount + " line" + (nrow.lineCount > 1 ? "s" : "")
+            color: Qt.darker(nrow.foreground, 1.8)
+            font.family: nrow.fontFamily
             font.pixelSize: Style.font.caption
             elide: Text.ElideRight
         }

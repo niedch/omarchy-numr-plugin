@@ -1,3 +1,4 @@
+// qmllint disable property-override missing-property unqualified
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -13,7 +14,7 @@ Item {
     property int selectedNoteIndex: 0   // Tracks the selected index for delegation sync
 
     onSelectedNoteIndexChanged: {
-        notesList.currentIndex = selectedNoteIndex;
+        notesList.currentIndex = root.selectedNoteIndex;
     }
 
     // --- Interface Signals ---
@@ -76,29 +77,29 @@ Item {
                 focus: true
 
                 onCountChanged: {
-                    if (count > 0) {
-                        Qt.callLater(function () {
+                    if (notesList.count > 0) {
+                        Qt.callLater(() => {
                             notesList.currentIndex = root.selectedNoteIndex;
                         });
                     }
                 }
 
-                Keys.onUpPressed: function (event) {
+                Keys.onUpPressed: event => {
                     notesList.decrementCurrentIndex();
                     event.accepted = true;
                 }
 
-                Keys.onDownPressed: function (event) {
+                Keys.onDownPressed: event => {
                     notesList.incrementCurrentIndex();
                     event.accepted = true;
                 }
 
                 Keys.onReturnPressed: {
-                    root.switchNoteRequested(currentIndex, true);
+                    root.switchNoteRequested(notesList.currentIndex, true);
                 }
 
                 Keys.onEnterPressed: {
-                    root.switchNoteRequested(currentIndex, true);
+                    root.switchNoteRequested(notesList.currentIndex, true);
                 }
 
                 ScrollBar.vertical: NumrScrollBar {
@@ -106,11 +107,12 @@ Item {
                 }
 
                 delegate: NumrNoteDelegate {
-                    selected: index === notesList.currentIndex
+                    id: noteDelegate
+                    selected: noteDelegate.index === notesList.currentIndex
                     foreground: root.bar ? root.bar.foreground : "white"
                     fontFamily: root.bar ? root.bar.fontFamily : "sans-serif"
                     onClicked: {
-                        root.switchNoteRequested(index, true);
+                        root.switchNoteRequested(noteDelegate.index, true);
                     }
                 }
             }

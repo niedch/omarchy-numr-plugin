@@ -54,6 +54,18 @@
           # Clean up the .dev directory when exiting the shell
           trap 'echo "Cleaning up .dev directory..."; rm -rf "$PWD/.dev"' EXIT
 
+          # Create development import directory structure safely
+          mkdir -p .dev/qml-imports/qs
+
+          # Symlink Omarchy shell modules
+          rm -f .dev/qml-imports/qs/Commons .dev/qml-imports/qs/Ui
+          ln -sf "${omarchy}/shell/Commons" .dev/qml-imports/qs/Commons
+          ln -sf "${omarchy}/shell/Ui" .dev/qml-imports/qs/Ui
+
+          # Construct and export QML import paths
+          export QML_IMPORT_PATH="${pkgs.qt6.qtdeclarative}/lib/qt-6/qml:${pkgs.quickshell}/lib/qt-6/qml:$PWD/.dev/qml-imports"
+          export QML2_IMPORT_PATH="${pkgs.qt6.qtdeclarative}/lib/qt-6/qml:${pkgs.quickshell}/lib/qt-6/qml:$PWD/.dev/qml-imports"
+
           echo ""
           echo -e "\033[1;32m=== omarchy-numr-plugin Dev Shell ===\033[0m"
           echo "Upstream basecamp/omarchy configuration loaded successfully!"
