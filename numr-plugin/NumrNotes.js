@@ -1,4 +1,4 @@
-const normalizeNote = (n) => {
+const normalizeNote = n => {
   if (!n || typeof n !== "object" || Array.isArray(n)) return null;
   const id = String(n.id ?? "");
   if (!id) return null;
@@ -43,7 +43,7 @@ const newNote = (text = "") => ({
 
 const tutorialNote = () => newNote(tutorialNoteText);
 
-const noteTitle = (note) => {
+const noteTitle = note => {
   if (!note) return "";
 
   const lines = String(note.text ?? "").split(/\r?\n/);
@@ -58,7 +58,7 @@ const noteTitle = (note) => {
   return "";
 };
 
-const lineCount = (note) => {
+const lineCount = note => {
   if (!note) return 0;
 
   const text = String(note.text ?? "");
@@ -90,7 +90,7 @@ const removeNoteAt = (notes, index) => {
   return values.filter((_, i) => i !== target);
 };
 
-const parseNotes = (raw) => {
+const parseNotes = raw => {
   try {
     const parsed = JSON.parse(String(raw ?? "{}"));
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
@@ -103,12 +103,12 @@ const parseNotes = (raw) => {
     let activeNoteId = String(parsed.activeNoteId ?? "");
     if (findIndex(notes, activeNoteId) < 0) activeNoteId = "";
     return { schemaVersion: 1, activeNoteId, notes };
-  } catch (err) {
+  } catch {
     return { schemaVersion: 1, activeNoteId: "", notes: [] };
   }
 };
 
-const displayRows = (notes) => {
+const displayRows = notes => {
   const values = Array.isArray(notes) ? notes : [];
   return values
     .map(normalizeNote)

@@ -52,3 +52,26 @@ export QML2_IMPORT_PATH="$DEV_DIR/shell:$QML2_IMPORT_PATH"
 
 quickshell "$@"
 """
+
+[tasks.lint]
+description = "Lint JavaScript and QML files"
+run = """
+eslint numr-plugin/*.js
+qmllint numr-plugin/*.qml
+"""
+
+[tasks.format]
+description = "Format JavaScript, QML, and Nix files in-place"
+run = """
+prettier --write numr-plugin/*.js
+qmlformat -i numr-plugin/*.qml
+alejandra flake.nix
+"""
+
+[tasks.check-format]
+description = "Check formatting of JavaScript, QML, and Nix files"
+run = """
+prettier --check numr-plugin/*.js
+for f in numr-plugin/*.qml; do qmlformat "$f" | diff -u "$f" - || exit 1; done
+alejandra --check flake.nix
+"""
