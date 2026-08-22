@@ -42,8 +42,17 @@ KeyboardPanel {
         resultsList.scrollToIndex(index);
     }
 
+    function syncCursorToLine(lineNum) {
+        var lines = editor.text.split("\n");
+        var pos = 0;
+        for (var i = 0; i < Math.min(lineNum, lines.length); i++) {
+            pos += lines[i].length + 1;
+        }
+        editor.cursorPosition = pos;
+    }
+
     focusTarget: editor
-    contentWidth: popup.fittedContentWidth(Style.space(660))
+    contentWidth: popup.fittedContentWidth(Style.space(960))
     contentHeight: popup.fittedContentHeight(Style.space(420))
 
     Item {
@@ -162,7 +171,7 @@ KeyboardPanel {
                 foreground: popup.bar.foreground
             }
 
-            // Body: notes column | divider | editor + results + footer.
+            // Body: notes column | divider | editor + footer | divider | results list.
             RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -186,8 +195,9 @@ KeyboardPanel {
                     color: Util.alpha(popup.bar.foreground, 0.12)
                 }
 
-                // ---- right column: editor + results + footer ----
+                // ---- middle column: editor + footer ----
                 ColumnLayout {
+                    Layout.preferredWidth: Style.space(350)
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     spacing: Style.spacing.md
@@ -197,7 +207,7 @@ KeyboardPanel {
                     ScrollView {
                         id: editorScroll
                         Layout.fillWidth: true
-                        Layout.preferredHeight: Style.space(120)
+                        Layout.fillHeight: true
                         clip: true
                         background: BorderSurface {
                             color: Style.controlFill(editor.activeFocus, editorHover.hovered, popup.bar.foreground, Color.accent)
@@ -238,17 +248,17 @@ KeyboardPanel {
                             HoverHandler {
                                 id: editorHover
                             }
-                        }
-                    }
 
-                    NumrResultList {
-                        id: resultsList
-                        bar: popup.bar
-                        numrAvailable: popup.numrAvailable
-                        statusText: popup.statusText
-                        resultModel: popup.resultModel
-                        onResultClicked: index => {
-                            popup.resultClicked(index);
+                            Rectangle {
+                                id: activeLineHighlight
+                                x: 0
+                                y: editor.cursorRectangle.y
+                                width: editor.width
+                                height: editor.cursorRectangle.height
+                                z: -1
+                                color: Util.alpha(popup.bar.foreground, 0.04)
+                                visible: editor.activeFocus
+                            }
                         }
                     }
 
@@ -295,6 +305,27 @@ KeyboardPanel {
                             verticalPadding: Style.spacing.controlPaddingY
                             onClicked: popup.deleteNoteClicked()
                         }
+                    }
+                }
+
+                // ---- divider ----
+                Rectangle {
+                    Layout.fillHeight: true
+                    width: Style.normalBorderWidth
+                    color: Util.alpha(popup.bar.foreground, 0.12)
+                }
+
+                NumrResultList {
+                    id: resultsList
+                    Layout.preferredWidth: Style.space(420)
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    bar: popup.bar
+                    numrAvailable: popup.numrAvailable
+                    statusText: popup.statusText
+                    resultModel: popup.resultModel
+                    onResultClicked: index => {
+                        popup.resultClicked(index);
                     }
                 }
             }

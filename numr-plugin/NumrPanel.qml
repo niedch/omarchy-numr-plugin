@@ -525,6 +525,10 @@ Panel {
         }
         onResultClicked: function (index) {
             root.copyResult(index);
+            var row = resultModel.get(index);
+            if (row) {
+                popup.syncCursorToLine(row.line);
+            }
         }
         onCopyAllClicked: root.copyAll()
         onClearAllClicked: root.clearAll()

@@ -1,5 +1,6 @@
 // qmllint disable missing-property
 import QtQuick
+import QtQuick.Layouts
 import qs.Commons
 
 Rectangle {
@@ -35,31 +36,35 @@ Rectangle {
         onClicked: row.clicked()
     }
 
-    Text {
-        id: exprText
-        anchors.left: parent.left
+    RowLayout {
+        anchors.fill: parent
         anchors.leftMargin: Style.spacing.controlPaddingX
-        anchors.right: row.isComment ? parent.right : resultText.left
-        anchors.rightMargin: row.isComment ? Style.spacing.controlPaddingX : Style.space(8)
-        anchors.verticalCenter: parent.verticalCenter
-        text: row.expr
-        color: row.isComment ? Qt.darker(row.foreground, 1.8) : Qt.darker(row.foreground, 1.4)
-        font.family: row.fontFamily
-        font.pixelSize: Style.font.body
-        font.italic: row.isComment
-        elide: Text.ElideRight
-    }
-
-    Text {
-        id: resultText
-        visible: !row.isComment
-        anchors.right: parent.right
         anchors.rightMargin: Style.spacing.controlPaddingX
-        anchors.verticalCenter: parent.verticalCenter
-        text: row.error ? "error" : row.pending ? "…" : row.result
-        color: row.error ? row.urgent : row.pending ? Qt.darker(row.foreground, 1.4) : row.foreground
-        font.family: row.fontFamily
-        font.pixelSize: Style.font.body
-        horizontalAlignment: Text.AlignRight
+        spacing: Style.space(8)
+
+        Text {
+            id: exprText
+            Layout.fillWidth: true
+            text: row.expr
+            color: row.isComment ? Qt.darker(row.foreground, 1.8) : Qt.darker(row.foreground, 1.4)
+            font.family: row.fontFamily
+            font.pixelSize: Style.font.body
+            font.italic: row.isComment
+            elide: Text.ElideRight
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        Text {
+            id: resultText
+            visible: !row.isComment
+            Layout.maximumWidth: parent.width * 0.55
+            text: row.error ? "error" : row.pending ? "…" : row.result
+            color: row.error ? row.urgent : row.pending ? Qt.darker(row.foreground, 1.4) : row.foreground
+            font.family: row.fontFamily
+            font.pixelSize: Style.font.body
+            horizontalAlignment: Text.AlignRight
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+        }
     }
 }
