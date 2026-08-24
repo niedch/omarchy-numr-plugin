@@ -2,9 +2,7 @@
 
 ## Demo
 
-<!-- TODO: Insert your demo video or GIF here -->
-<!-- Example: ![Numr Demo](path/to/demo.gif) -->
-[Insert Demo Video/GIF Here]
+https://github.com/user-attachments/assets/60ef1ba0-23b8-481e-92cc-f8946d6371e4
 
 ## Features
 
