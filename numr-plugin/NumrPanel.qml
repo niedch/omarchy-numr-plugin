@@ -6,22 +6,16 @@ import Quickshell
 import Quickshell.Io
 import qs.Ui
 import qs.Commons
-import "NumrNotes.js" as NumrNotes
 
-// Natural-language calculator powered by numr-cli. Each non-empty line of
-// the scratch pad is evaluated live (debounced 300ms) over a persistent
-// JSON-RPC session (`numr-cli --server`), so results stream in below the
-// editor row by row. Because the session lives for the widget's lifetime,
-// variables and history persist across edits natively; `#` comment lines
-// are skipped and never sent to the server. Notes persist to disk as JSON
-// and are switchable from the side column.
 Panel {
     id: root
     moduleName: "nic.numr"
     ipcTarget: "nic.numr"
+    implicitWidth: button.implicitWidth
+    implicitHeight: button.implicitHeight
 
     // --- state ---
-    property string text: "" // bound two-way to the editor
+    property alias text: notesManager.text // bound two-way to the editor via notesManager
     onTextChanged: {
         if (popup && popup.text !== root.text) {
             popup.text = root.text;
@@ -34,15 +28,7 @@ Panel {
     property int totalEvalCount: 0
     property int completedEvalCount: 0
     property bool isCliCheckComplete: false
-    readonly property string stateDir: Quickshell.env("HOME") + "/.local/state/omarchy"
-    property string notesPath: root.stateDir + "/numr-notes.json"
-    property var notes: []
-    property string activeNoteId: ""
-    property int selectedNoteIndex: 0
     property int currentEditorLine: 0
-
-    implicitWidth: button.implicitWidth
-    implicitHeight: button.implicitHeight
 
     // Rows are keyed by `line` (index in the split scratchpad) so results can
     // be patched back in by position even if the queue is rebuilt.
@@ -50,8 +36,13 @@ Panel {
         id: resultModel
     }
 
-    ListModel {
-        id: notesModel
+    NumrNotesManager {
+        id: notesManager
+        onNotesLoaded: {
+            if (root.opened) {
+                root.evaluateNow();
+            }
+        }
     }
 
     Timer {
@@ -63,7 +54,7 @@ Panel {
     Timer {
         id: saveTimer
         interval: 500
-        onTriggered: root.saveCurrentNote()
+        onTriggered: notesManager.saveCurrentNote()
     }
 
     // Availability check — numr-cli has no --version flag.
@@ -103,25 +94,7 @@ Panel {
         onTriggered: root.startServer()
     }
 
-    // FileView does not create parent directories — ensure the state dir first.
-    Process {
-        id: mkdirProc
-        command: ["mkdir", "-p", root.stateDir]
-    }
-
-    FileView {
-        id: notesFile
-        path: root.notesPath
-        watchChanges: true
-        atomicWrites: true
-        printErrors: false
-        onLoaded: root.loadNotes(text())
-        onLoadFailed: root.loadNotes("")
-        onFileChanged: reload()
-    }
-
     Component.onCompleted: {
-        mkdirProc.running = true;
         checkProc.running = true;
     }
 
@@ -134,7 +107,7 @@ Panel {
         }
         evalDebounce.stop();
         saveTimer.stop();
-        root.saveCurrentNote();
+        notesManager.saveCurrentNote();
     }
 
     function startServer() {
@@ -169,6 +142,7 @@ Panel {
         return bestIdx;
     }
 
+    // Synchronize UI highlight with editor cursor row
     function syncHighlight() {
         if (!popup || !resultModel)
             return;
@@ -344,120 +318,24 @@ Panel {
         root.text = "";
     }
 
-    function loadNotes(raw) {
-        var parsed = NumrNotes.parseNotes(raw);
-
-        // Safeguard active typing buffer from being overwritten during asynchronous disk loads
-        var isSameActive = (parsed.activeNoteId === root.activeNoteId);
-        var activeIdx = NumrNotes.findIndex(parsed.notes, parsed.activeNoteId);
-        var isSameText = activeIdx >= 0 && (parsed.notes[activeIdx].text === root.text);
-
-        root.notes = parsed.notes;
-        root.activeNoteId = parsed.activeNoteId;
-        if (root.notes.length === 0) {
-            root.notes = [NumrNotes.tutorialNote()];
-            root.activeNoteId = root.notes[0].id;
-        }
-        root.selectedNoteIndex = Math.max(0, NumrNotes.findIndex(root.notes, root.activeNoteId));
-        root.rebuildNotes();
-
-        // Only update the active editor text if the note changed, or if there is genuine text differences on disk
-        if (!isSameActive || !isSameText) {
-            root.text = root.notes[root.selectedNoteIndex].text;
-        }
-
-        if (root.opened) {
-            root.evaluateNow();
-        }
-    }
-
-    function saveNotes() {
-        notesFile.setText(JSON.stringify({
-            schemaVersion: 1,
-            activeNoteId: root.activeNoteId,
-            notes: root.notes
-        }, null, 2) + "\n");
-    }
-
-    function currentNote() {
-        if (root.notes.length === 0)
-            return null;
-        return root.notes[Math.max(0, Math.min(root.selectedNoteIndex, root.notes.length - 1))];
-    }
-
-    function updateCurrentNoteMemory() {
-        var n = root.currentNote();
-        if (!n)
-            return;
-        n.text = root.text;
-        n.updatedAt = new Date().toISOString();
-        root.rebuildNotes();
-    }
-
-    function saveCurrentNote() {
-        root.updateCurrentNoteMemory();
-        root.saveNotes();
-    }
-
-    function rebuildNotes() {
-        var rows = NumrNotes.displayRows(root.notes);
-        if (notesModel.count === rows.length) {
-            // In-place update to prevent clearing the model and losing current selection/focus
-            for (var i = 0; i < rows.length; i++) {
-                notesModel.set(i, {
-                    id: rows[i].id,
-                    title: rows[i].title,
-                    lineCount: rows[i].lineCount
-                });
-            }
-        } else {
-            // Only clear and rebuild if the size changes (e.g. note added or deleted)
-            notesModel.clear();
-            for (var j = 0; j < rows.length; j++) {
-                notesModel.append({
-                    id: rows[j].id,
-                    title: rows[j].title,
-                    lineCount: rows[j].lineCount
-                });
-            }
-        }
-    }
-
     function newNote() {
-        root.updateCurrentNoteMemory();
-        root.notes = NumrNotes.addNote(root.notes, NumrNotes.newNote());
-        root.activeNoteId = root.notes[root.notes.length - 1].id;
-        root.selectedNoteIndex = root.notes.length - 1;
+        notesManager.newNote();
         root.resetSession();
-        root.text = "";
-        root.rebuildNotes();
-        root.saveNotes();
         Qt.callLater(function () {
             popup.forceEditorFocus();
         });
     }
 
     function deleteNote() {
-        if (root.notes.length === 0)
-            return;
-        var idx = root.selectedNoteIndex;
-        root.notes = NumrNotes.removeNoteAt(root.notes, idx);
-        if (root.notes.length === 0) {
-            root.notes = [NumrNotes.newNote()];
-        }
-        root.selectedNoteIndex = Math.min(idx, root.notes.length - 1);
-        root.activeNoteId = root.notes[root.selectedNoteIndex].id;
+        notesManager.deleteNote();
         root.resetSession();
-        root.text = root.notes[root.selectedNoteIndex].text;
-        root.rebuildNotes();
-        root.saveNotes();
         root.evaluateNow();
     }
 
     function switchNote(index, focusEditor = true) {
-        if (index < 0 || index >= root.notes.length)
+        if (index < 0 || index >= notesManager.notes.length)
             return;
-        if (index === root.selectedNoteIndex) {
+        if (index === notesManager.selectedNoteIndex) {
             if (focusEditor) {
                 Qt.callLater(function () {
                     popup.forceEditorFocus();
@@ -466,13 +344,8 @@ Panel {
             return;
         }
 
-        root.updateCurrentNoteMemory();
-        root.selectedNoteIndex = index;
-        root.activeNoteId = root.notes[index].id;
+        notesManager.switchNote(index);
         root.resetSession();
-        root.text = root.notes[index].text;
-        root.rebuildNotes();
-        root.saveNotes();
         root.evaluateNow();
 
         if (focusEditor) {
@@ -504,9 +377,9 @@ Panel {
         bar: root.bar
         open: root.opened
 
-        notesModel: notesModel
+        notesModel: notesManager.notesModel
         resultModel: resultModel
-        selectedNoteIndex: root.selectedNoteIndex
+        selectedNoteIndex: notesManager.selectedNoteIndex
         numrAvailable: root.numrAvailable
         statusText: root.statusText
 

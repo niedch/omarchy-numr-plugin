@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import qs.Ui
 import qs.Commons
+import "components"
 
 KeyboardPanel {
     id: popup
@@ -13,7 +14,7 @@ KeyboardPanel {
     required property var notesModel
     required property var resultModel
     property int selectedNoteIndex: 0
-    property alias text: editor.text
+    property alias text: workspace.text
     property bool numrAvailable: true
     property string statusText: ""
 
@@ -30,80 +31,25 @@ KeyboardPanel {
 
     readonly property bool opened: popup.open
 
-    readonly property var activePhrases: ["Crunching numbers", "Solving equations", "Balancing ledgers", "Summing columns", "Synthesizing variables", "Parsing matrices", "Evaluating proofs", "Calculating limits"]
-    property int phraseIndex: 0
-
     // --- Interface Functions ---
     function forceEditorFocus() {
-        editor.forceActiveFocus();
+        workspace.forceEditorFocus();
     }
 
     function scrollToResultIndex(index) {
-        resultsList.scrollToIndex(index);
+        workspace.scrollToResultIndex(index);
     }
 
-    focusTarget: editor
+    focusTarget: workspace
     contentWidth: popup.fittedContentWidth(Style.space(660))
     contentHeight: popup.fittedContentHeight(Style.space(420))
 
     Item {
         anchors.fill: parent
 
-        Timer {
-            id: phraseTimer
-            interval: 2800
-            running: popup.opened
-            repeat: true
-            triggeredOnStart: false
-            onTriggered: phraseSwap.restart()
-        }
-
-        SequentialAnimation {
-            id: phraseSwap
-            PropertyAnimation {
-                target: headerStatus
-                property: "opacity"
-                to: 0.0
-                duration: 180
-                easing.type: Easing.OutQuad
-            }
-            ScriptAction {
-                script: {
-                    var n = popup.activePhrases.length;
-                    if (n > 0)
-                        popup.phraseIndex = (popup.phraseIndex + 1) % n;
-                }
-            }
-            PropertyAnimation {
-                target: headerStatus
-                property: "opacity"
-                to: 1.0
-                duration: 260
-                easing.type: Easing.InQuad
-            }
-        }
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {
                 popup.close();
-                event.accepted = true;
-                return;
-            }
-            if (event.key === Qt.Key_N && (event.modifiers & Qt.ControlModifier)) {
-                popup.newNoteRequested();
-                event.accepted = true;
-                return;
-            }
-            if (event.key === Qt.Key_Return && (event.modifiers & Qt.ControlModifier)) {
-                popup.evaluateNowRequested();
-                event.accepted = true;
-                return;
-            }
-            if (event.key === Qt.Key_Tab && (event.modifiers & Qt.ControlModifier)) {
-                if (editor.activeFocus) {
-                    sidebar.focusList();
-                } else {
-                    editor.forceActiveFocus();
-                }
                 event.accepted = true;
                 return;
             }
@@ -141,18 +87,14 @@ KeyboardPanel {
                         text: "Numr Calculator"
                         color: popup.bar.foreground
                         font.family: popup.bar.fontFamily
-                        font.pixelSize: Style.font.title // Matches 14px Battery bold label
+                        font.pixelSize: Style.font.title
                         font.bold: true
                     }
 
-                    Text {
+                    NumrHeaderStatus {
                         id: headerStatus
-                        text: popup.activePhrases[popup.phraseIndex].toUpperCase()
-                        color: Qt.darker(popup.bar.foreground, 1.4)
-                        font.family: popup.bar.fontFamily
-                        font.pixelSize: Style.font.caption // Matches 10px tracked battery label
-                        font.bold: true
-                        font.letterSpacing: 1.2 // Tracked letter-spacing
+                        bar: popup.bar
+                        active: popup.opened
                     }
                 }
             }
@@ -162,140 +104,32 @@ KeyboardPanel {
                 foreground: popup.bar.foreground
             }
 
-            // Body: notes column | divider | editor + results + footer.
-            RowLayout {
+            // Body: Workspace encapsulates notes column, divider, editor, results, and footer
+            NumrWorkspace {
+                id: workspace
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: Style.spacing.panelGap
+                bar: popup.bar
+                notesModel: popup.notesModel
+                resultModel: popup.resultModel
+                selectedNoteIndex: popup.selectedNoteIndex
+                numrAvailable: popup.numrAvailable
+                statusText: popup.statusText
 
-                NumrSidebar {
-                    id: sidebar
-                    bar: popup.bar
-                    notesModel: popup.notesModel
-                    selectedNoteIndex: popup.selectedNoteIndex
-                    onNewNoteClicked: popup.newNoteClicked()
-                    onSwitchNoteRequested: (index, focusEditor) => {
-                        popup.switchNoteRequested(index, focusEditor);
-                    }
+                onNewNoteClicked: popup.newNoteClicked()
+                onNewNoteRequested: popup.newNoteRequested()
+                onSwitchNoteRequested: (index, focusEditor) => {
+                    popup.switchNoteRequested(index, focusEditor);
                 }
-
-                // ---- divider ----
-                Rectangle {
-                    Layout.fillHeight: true
-                    width: Style.normalBorderWidth
-                    color: Util.alpha(popup.bar.foreground, 0.12)
+                onResultClicked: index => {
+                    popup.resultClicked(index);
                 }
-
-                // ---- right column: editor + results + footer ----
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    spacing: Style.spacing.md
-
-                    // Scratch-pad editor inside a ScrollView (QQC2 TextArea is not a
-                    // Flickable, so it needs a ScrollView wrapper to scroll).
-                    ScrollView {
-                        id: editorScroll
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Style.space(120)
-                        clip: true
-                        background: BorderSurface {
-                            color: Style.controlFill(editor.activeFocus, editorHover.hovered, popup.bar.foreground, Color.accent)
-                            borderSpec: Border.controlSpec(editor.activeFocus ? "focus" : (editorHover.hovered ? "hover-cursor" : "normal"), popup.bar.foreground, Color.accent)
-                            radius: Style.cornerRadius
-                        }
-                        ScrollBar.vertical: NumrScrollBar {
-                            foregroundColor: popup.bar.foreground
-                        }
-
-                        TextArea {
-                            id: editor
-                            width: parent.width   // fill the ScrollView viewport
-                            wrapMode: TextEdit.Wrap
-                            selectByMouse: true
-                            font.family: popup.bar.fontFamily
-                            font.pixelSize: Style.font.body
-                            color: popup.bar.foreground
-                            placeholderTextColor: Qt.darker(popup.bar.foreground, 1.6)
-                            palette.text: popup.bar.foreground
-                            palette.placeholderText: Qt.darker(popup.bar.foreground, 1.6)
-                            palette.highlight: Style.selectionFillFor(popup.bar.foreground, Color.accent)
-                            palette.highlightedText: popup.bar.foreground
-                            leftPadding: Style.spacing.controlPaddingX
-                            rightPadding: Style.spacing.controlPaddingX + 14   // leave room for the scrollbar
-                            topPadding: Style.spacing.inputPaddingY
-                            bottomPadding: Style.spacing.inputPaddingY
-                            placeholderText: "20 inches in cm\nx = 5000\n5 * (1 + 2)"
-                            background: null  // themed background is on the ScrollView
-
-                            onCursorPositionChanged: {
-                                var txt = text || "";
-                                var textUpToCursor = txt.substring(0, cursorPosition);
-                                var line = textUpToCursor.split("\n").length - 1;
-                                popup.editorLineChanged(line);
-                            }
-
-                            HoverHandler {
-                                id: editorHover
-                            }
-                        }
-                    }
-
-                    NumrResultList {
-                        id: resultsList
-                        bar: popup.bar
-                        numrAvailable: popup.numrAvailable
-                        statusText: popup.statusText
-                        resultModel: popup.resultModel
-                        onResultClicked: index => {
-                            popup.resultClicked(index);
-                        }
-                    }
-
-                    // Footer actions.
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Button {
-                            text: "Copy all"
-                            enabled: popup.resultModel.count > 0
-                            foreground: popup.bar.foreground
-                            fontFamily: popup.bar.fontFamily
-                            fontSize: Style.font.bodySmall
-                            bordered: true
-                            horizontalPadding: Style.spacing.controlPaddingX
-                            verticalPadding: Style.spacing.controlPaddingY
-                            onClicked: popup.copyAllClicked()
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-
-                        Button {
-                            text: "Clear"
-                            foreground: popup.bar.foreground
-                            fontFamily: popup.bar.fontFamily
-                            fontSize: Style.font.bodySmall
-                            bordered: true
-                            horizontalPadding: Style.spacing.controlPaddingX
-                            verticalPadding: Style.spacing.controlPaddingY
-                            onClicked: popup.clearAllClicked()
-                        }
-
-                        Button {
-                            text: "Delete"
-                            tooltipText: "Delete this note"
-                            enabled: popup.notesModel.count > 0
-                            foreground: popup.bar.foreground
-                            fontFamily: popup.bar.fontFamily
-                            fontSize: Style.font.bodySmall
-                            bordered: true
-                            horizontalPadding: Style.spacing.controlPaddingX
-                            verticalPadding: Style.spacing.controlPaddingY
-                            onClicked: popup.deleteNoteClicked()
-                        }
-                    }
+                onCopyAllClicked: popup.copyAllClicked()
+                onClearAllClicked: popup.clearAllClicked()
+                onDeleteNoteClicked: popup.deleteNoteClicked()
+                onEvaluateNowRequested: popup.evaluateNowRequested()
+                onEditorLineChanged: lineNum => {
+                    popup.editorLineChanged(lineNum);
                 }
             }
         }
