@@ -69,6 +69,13 @@
           echo "Upstream basecamp/omarchy configuration loaded successfully!"
           echo ""
 
+          # NVIDIA proprietary GL cannot be driven by the nixpkgs Qt/EGL stack
+          if [ -f /usr/share/glvnd/egl_vendor.d/10_nvidia.json ]; then
+            echo "NOTE: NVIDIA proprietary GL detected; the dev shell runs with Qt software rendering (QT_QUICK_BACKEND=software)."
+          fi
+
+          echo ""
+
           # Run mise tasks ls to show available development commands
           mise tasks ls
           echo ""
