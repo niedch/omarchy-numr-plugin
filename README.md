@@ -65,6 +65,28 @@ Development for this plugin is done inside a Nix environment to ensure reproduci
    mise run run-quickshell
    ```
 
+### Rendering
+
+The sandboxed shell renders with Qt's software scene graph (`QT_QUICK_BACKEND=software`). The nixpkgs Qt/EGL stack cannot create GL contexts against the NVIDIA proprietary driver on the host, so GPU-accelerated rendering is disabled by default. This only affects visuals (for example, `ShaderEffect`-based effects will not render). If your Nix environment can create GL contexts, override it:
+
+```bash
+QT_QUICK_BACKEND=rhi mise run run-quickshell
+```
+
+### Automated smoke check
+
+To verify the dev shell boots and renders without graphics errors, run:
+
+```bash
+mise run check-quickshell
+```
+
+The check launches the shell for about 12 seconds and fails if it crashes, fails to reach `service-ready`, or logs RHI/graphics-context errors. To run the shell manually under a timeout (a GUI process that keeps running until killed, so expect exit code 124):
+
+```bash
+timeout 60s nix develop -c mise run run-quickshell
+```
+
 ### Formatting and Linting
 
 To maintain code quality and follow the project's standards, use the following commands for formatting and linting:

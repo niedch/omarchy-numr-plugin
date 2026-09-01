@@ -50,6 +50,10 @@ export OMARCHY_PATH="$DEV_DIR"
 export QS_CONFIG_PATH="$DEV_DIR/shell"
 export QML2_IMPORT_PATH="$DEV_DIR/shell:$QML2_IMPORT_PATH"
 
+# Nixpkgs Qt cannot create GL/EGL contexts against the NVIDIA proprietary driver on this host.
+# Fall back to Qt's software scene-graph adaptation (CPU rendering) unless the caller overrides it.
+export QT_QUICK_BACKEND="${QT_QUICK_BACKEND:-software}"
+
 quickshell "$@"
 """
 
@@ -74,4 +78,42 @@ run = """
 prettier --check numr-plugin/*.js
 for f in numr-plugin/*.qml; do qmlformat "$f" | diff -u "$f" - || exit 1; done
 alejandra --check flake.nix
+"""
+
+[tasks.check-quickshell]
+description = "Run the dev shell briefly and verify it boots and renders without graphics errors"
+run = """
+LOG="${TMPDIR:-/tmp}/omarchy-numr-check-quickshell.log"
+rm -f "$LOG"
+
+# Run in a new process group so we can kill the whole tree (mise sh wrapper + quickshell) on exit
+setsid mise run run-quickshell >"$LOG" 2>&1 &
+QSPID=$!
+
+trap 'kill -- -$QSPID 2>/dev/null' EXIT
+
+sleep 12
+
+status=0
+
+if ! kill -0 $QSPID 2>/dev/null; then
+  echo "FAIL: quickshell exited early"
+  status=1
+fi
+
+if grep -E "Failed to create (RHI|graphics context)|Failed to initialize graphics backend" "$LOG"; then
+  echo "FAIL: graphics context errors detected"
+  status=1
+fi
+
+if ! grep -q "service-ready" "$LOG"; then
+  echo "FAIL: shell did not report service-ready"
+  status=1
+fi
+
+if [ $status -eq 0 ]; then
+  echo "PASS: dev shell ran without graphics errors"
+fi
+
+[ $status -eq 0 ]
 """
