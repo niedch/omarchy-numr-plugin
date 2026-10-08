@@ -15,11 +15,9 @@ https://github.com/user-attachments/assets/60ef1ba0-23b8-481e-92cc-f8946d6371e4
 
 ### Dependency
 
-Numr is a core dependency for this plugin. It must be installed on your system using `pacman` (or an AUR helper like `yay`):
+Numr is a core dependency for this plugin. It is only available in the Arch User Repository (AUR), so install it with an AUR helper like `yay`:
 
 ```bash
-sudo pacman -S numr
-# Or using yay:
 yay -S numr
 ```
 
@@ -30,6 +28,16 @@ Once the dependency is installed, you can add the plugin to your Omarchy shell b
 ```bash
 omarchy plugin add https://github.com/niedch/omarchy-numr-plugin --enable
 ```
+
+### Removal
+
+To remove the plugin, run:
+
+```bash
+omarchy plugin remove nic.numr
+```
+
+This disables the plugin and deletes the checkout (the repo stays on GitHub).
 
 ### Configuration
 
