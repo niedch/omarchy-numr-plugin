@@ -52,9 +52,6 @@
           # Export the path of the upstream basecamp/omarchy repo from the Nix store
           export OMARCHY_PATH="${omarchy}"
 
-          # Clean up the .dev directory when exiting the shell
-          trap 'echo "Cleaning up .dev directory..."; rm -rf "$PWD/.dev"' EXIT
-
           # Create development import directory structure safely
           mkdir -p .dev/qml-imports/qs
 

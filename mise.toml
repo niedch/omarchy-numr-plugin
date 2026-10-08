@@ -1,5 +1,7 @@
-[tasks.run-quickshell]
-description = "Launch QuickShell with dev-shell.qml"
+[tasks.setup-dev]
+description = "Set up the .dev environment and configuration files"
+sources = ["mise.toml", "manifest.json", "flake.nix", "flake.lock"]
+outputs = [".dev/.config/omarchy/shell.json"]
 run = """
 if [ -z "$OMARCHY_PATH" ]; then
   echo -e "\\033[1;31mError: \\$OMARCHY_PATH is not defined in the shell environment.\\033[0m"
@@ -13,15 +15,11 @@ if [ ! -d "$OMARCHY_PATH" ]; then
 fi
 
 DEV_DIR="$PWD/.dev"
-rm -rf "$DEV_DIR"
 mkdir -p "$DEV_DIR"
 
 # Copy all official upstream files into the .dev folder
 cp -r "$OMARCHY_PATH"/* "$DEV_DIR"/
 chmod -R u+w "$DEV_DIR"
-
-# Isolate HOME to the .dev folder so we don't load/modify the user's real personal shell.json config and state
-export HOME="$DEV_DIR"
 
 # Inject our custom shell.json layout into the isolated user configuration directory
 mkdir -p "$DEV_DIR/.config/omarchy"
@@ -43,7 +41,18 @@ EOF
 # Symlink our workspace repository into the isolated user plugins directory under .dev/.config/omarchy/plugins
 # This registers it as a third-party plugin which handles symbolic links natively
 mkdir -p "$DEV_DIR/.config/omarchy/plugins"
+rm -f "$DEV_DIR/.config/omarchy/plugins/omarchy-numr-plugin"
 ln -sf "$PWD" "$DEV_DIR/.config/omarchy/plugins/omarchy-numr-plugin"
+"""
+
+[tasks.run-quickshell]
+description = "Launch QuickShell with dev-shell.qml"
+depends = ["setup-dev"]
+run = """
+DEV_DIR="$PWD/.dev"
+
+# Isolate HOME to the .dev folder so we don't load/modify the user's real personal shell.json config and state
+export HOME="$DEV_DIR"
 
 # Export environments
 export OMARCHY_PATH="$DEV_DIR"
@@ -61,14 +70,14 @@ quickshell "$@"
 description = "Lint JavaScript and QML files"
 run = """
 eslint numr-plugin/*.js
-qmllint -E numr-plugin/*.qml
+qmllint -E numr-plugin/*.qml numr-plugin/components/*.qml
 """
 
 [tasks.format]
 description = "Format JavaScript, QML, and Nix files in-place"
 run = """
 prettier --write numr-plugin/*.js
-qmlformat -i numr-plugin/*.qml
+qmlformat -i numr-plugin/*.qml numr-plugin/components/*.qml
 alejandra flake.nix
 """
 
@@ -76,7 +85,7 @@ alejandra flake.nix
 description = "Check formatting of JavaScript, QML, and Nix files"
 run = """
 prettier --check numr-plugin/*.js
-for f in numr-plugin/*.qml; do qmlformat "$f" | diff -u "$f" - || exit 1; done
+for f in numr-plugin/*.qml numr-plugin/components/*.qml; do qmlformat "$f" | diff -u "$f" - || exit 1; done
 alejandra --check flake.nix
 """
 
