@@ -26,10 +26,19 @@ Item {
         id: internalNotesModel
     }
 
-    // Ensure the state directory exists. FileView does not create parent directories.
+    // Ensure the state directory exists and pre-create the notes file as 0600.
+    // FileView with atomicWrites uses QSaveFile, which copies the existing file's
+    // permissions on each atomic write; a 0600 pre-created file therefore keeps
+    // every save owner-only. The directory itself is left at its default mode.
     Process {
         id: mkdirProc
-        command: ["mkdir", "-p", manager.stateDir]
+        command: [
+            "bash", "-c",
+            'd="$1"; f="$2"; mkdir -p "$d"; ' +
+            'if [ -e "$f" ]; then chmod 600 "$f"; ' +
+            'else install -m 600 /dev/null "$f"; fi',
+            "_", manager.stateDir, manager.notesPath
+        ]
     }
 
     FileView {
@@ -41,6 +50,14 @@ Item {
         onLoaded: manager.loadNotes(notesFile.text())
         onLoadFailed: manager.loadNotes("")
         onFileChanged: reload()
+        onSaved: secureNoteFile.running = true
+    }
+
+    // Re-assert 0600 after each atomic save as defense-in-depth, in case the
+    // file's mode is ever altered by another tool or future QSaveFile behavior.
+    Process {
+        id: secureNoteFile
+        command: ["bash", "-c", 'f="$1"; [ -e "$f" ] && chmod 600 "$f" || true', "_", manager.notesPath]
     }
 
     Component.onCompleted: {
