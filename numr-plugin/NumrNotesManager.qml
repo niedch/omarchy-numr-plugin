@@ -32,13 +32,7 @@ Item {
     // every save owner-only. The directory itself is left at its default mode.
     Process {
         id: mkdirProc
-        command: [
-            "bash", "-c",
-            'd="$1"; f="$2"; mkdir -p "$d"; ' +
-            'if [ -e "$f" ]; then chmod 600 "$f"; ' +
-            'else install -m 600 /dev/null "$f"; fi',
-            "_", manager.stateDir, manager.notesPath
-        ]
+        command: ["bash", "-c", 'd="$1"; f="$2"; mkdir -p "$d"; ' + 'if [ -e "$f" ]; then chmod 600 "$f"; ' + 'else install -m 600 /dev/null "$f"; fi', "_", manager.stateDir, manager.notesPath]
     }
 
     FileView {
