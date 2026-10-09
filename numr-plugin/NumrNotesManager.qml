@@ -16,6 +16,12 @@ Item {
     readonly property string stateDir: Quickshell.env("HOME") + "/.local/state/omarchy"
     property string notesPath: manager.stateDir + "/numr-notes.json"
 
+    // Gate the first save until the 0600 pre-creation (mkdirProc) has finished,
+    // so QSaveFile always copies an existing 0600 file instead of creating a
+    // fresh 0644 one (under umask 022) before the pre-creation lands.
+    property bool secureReady: false
+    property bool pendingSave: false
+
     // Expose the model for external UI list binding
     readonly property ListModel notesModel: internalNotesModel
 
@@ -33,6 +39,13 @@ Item {
     Process {
         id: mkdirProc
         command: ["bash", "-c", 'd="$1"; f="$2"; mkdir -p "$d"; ' + 'if [ -e "$f" ]; then chmod 600 "$f"; ' + 'else install -m 600 /dev/null "$f"; fi', "_", manager.stateDir, manager.notesPath]
+        onExited: {
+            manager.secureReady = true;
+            if (manager.pendingSave) {
+                manager.pendingSave = false;
+                manager.saveNotes();
+            }
+        }
     }
 
     FileView {
@@ -86,6 +99,10 @@ Item {
     }
 
     function saveNotes() {
+        if (!manager.secureReady) {
+            manager.pendingSave = true;
+            return;
+        }
         notesFile.setText(JSON.stringify({
             schemaVersion: 1,
             activeNoteId: manager.activeNoteId,
