@@ -15,7 +15,7 @@ https://github.com/user-attachments/assets/60ef1ba0-23b8-481e-92cc-f8946d6371e4
 
 ### Dependency
 
-Numr is a core dependency for this plugin. It is only available in the Arch User Repository (AUR), so install it with an AUR helper like `yay`:
+Numr is a core dependency for this plugin. It is only available in the Arch User Repository (AUR):
 
 ```bash
 yay -S numr
@@ -68,8 +68,6 @@ Development for this plugin is done inside a Nix environment to ensure reproduci
 
 2. Start the sandboxed environment to run and test the plugin:
    ```bash
-   mise run-quickshell
-   # Or alternatively:
    mise run run-quickshell
    ```
 
