@@ -89,14 +89,22 @@ FocusScope {
             color: Util.alpha(root.bar ? root.bar.foreground : "white", 0.12)
         }
 
-        // Right Column: Editor + Result List + Action Buttons
-        ColumnLayout {
+        // Right Area: Editor + Result List + Action Buttons (Normal: vertical stack; Fullscreen: side-by-side)
+        GridLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: Style.spacing.md
+            columns: root.isFullscreen ? 3 : 1
+            rows: root.isFullscreen ? 2 : 3
+            columnSpacing: Style.spacing.panelGap
+            rowSpacing: Style.spacing.md
 
             NumrEditor {
                 id: editor
+                Layout.row: 0
+                Layout.column: 0
+                Layout.fillWidth: true
+                Layout.fillHeight: root.isFullscreen
+                Layout.preferredWidth: root.isFullscreen ? 1 : -1
                 bar: root.bar
                 isFullscreen: root.isFullscreen
                 onLineChanged: lineNum => {
@@ -104,8 +112,24 @@ FocusScope {
                 }
             }
 
+            // Vertical Separator between Editor and Results in fullscreen mode
+            Rectangle {
+                Layout.row: 0
+                Layout.column: 1
+                Layout.fillHeight: true
+                Layout.preferredWidth: Style.normalBorderWidth
+                width: Style.normalBorderWidth
+                visible: root.isFullscreen
+                color: Util.alpha(root.bar ? root.bar.foreground : "white", 0.12)
+            }
+
             NumrResultList {
                 id: resultsList
+                Layout.row: root.isFullscreen ? 0 : 1
+                Layout.column: root.isFullscreen ? 2 : 0
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredWidth: root.isFullscreen ? 1 : -1
                 bar: root.bar
                 numrAvailable: root.numrAvailable
                 statusText: root.statusText
@@ -117,9 +141,14 @@ FocusScope {
 
             NumrFooter {
                 id: footer
+                Layout.row: root.isFullscreen ? 1 : 2
+                Layout.column: 0
+                Layout.columnSpan: root.isFullscreen ? 3 : 1
+                Layout.fillWidth: true
                 bar: root.bar
                 notesModel: root.notesModel
                 resultModel: root.resultModel
+                isFullscreen: root.isFullscreen
                 onCopyAllClicked: root.copyAllClicked()
                 onClearAllClicked: root.clearAllClicked()
                 onDeleteNoteClicked: root.deleteNoteClicked()

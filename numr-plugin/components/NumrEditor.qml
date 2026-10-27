@@ -23,14 +23,8 @@ ScrollView {
     }
 
     Layout.fillWidth: true
-    Layout.preferredHeight: root.isFullscreen ? Style.space(280) : Style.space(120)
-
-    Behavior on Layout.preferredHeight {
-        NumberAnimation {
-            duration: Style.duration(200)
-            easing.type: Easing.OutCubic
-        }
-    }
+    Layout.fillHeight: root.isFullscreen
+    Layout.preferredHeight: Style.space(120)
     clip: true
 
     background: BorderSurface {
