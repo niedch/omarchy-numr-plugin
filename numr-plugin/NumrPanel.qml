@@ -10,12 +10,13 @@ import qs.Commons
 Panel {
     id: root
     moduleName: "nic.numr"
-    ipcTarget: "nic.numr"
+    manageIpc: false
     implicitWidth: button.implicitWidth
     implicitHeight: button.implicitHeight
 
     // --- state ---
     property alias text: notesManager.text // bound two-way to the editor via notesManager
+    property alias isFullscreen: popup.isFullscreen
     onTextChanged: {
         if (popup && popup.text !== root.text) {
             popup.text = root.text;
@@ -352,6 +353,36 @@ Panel {
             Qt.callLater(function () {
                 popup.forceEditorFocus();
             });
+        }
+    }
+
+    function toggleFullscreen(): void {
+        popup.toggleFullscreen();
+    }
+
+    ShellIpc {
+        target: "nic.numr"
+
+        function open(): void {
+            root.open();
+        }
+        function close(): void {
+            root.close();
+        }
+        function show(): void {
+            root.open();
+        }
+        function hide(): void {
+            root.close();
+        }
+        function toggle(): void {
+            root.toggle();
+        }
+        function toggleFullscreen(): void {
+            root.toggleFullscreen();
+        }
+        function isFullscreen(): bool {
+            return root.isFullscreen;
         }
     }
 

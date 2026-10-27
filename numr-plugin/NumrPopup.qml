@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import qs.Ui
 import qs.Commons
+import qs.Commons as Commons
 import "components"
 
 KeyboardPanel {
@@ -17,6 +18,7 @@ KeyboardPanel {
     property alias text: workspace.text
     property bool numrAvailable: true
     property string statusText: ""
+    property bool isFullscreen: false
 
     // --- Interface Signals ---
     signal newNoteClicked
@@ -40,14 +42,40 @@ KeyboardPanel {
         workspace.scrollToResultIndex(index);
     }
 
+    function toggleFullscreen() {
+        isFullscreen = !isFullscreen;
+    }
+
     focusTarget: workspace
-    contentWidth: popup.fittedContentWidth(Style.space(660))
-    contentHeight: popup.fittedContentHeight(Style.space(420))
+    centerOnBar: false
+    contentWidth: isFullscreen && popup.availableCardWidth > 0 ? popup.availableCardWidth : popup.fittedContentWidth(Style.space(660))
+    contentHeight: isFullscreen && popup.availableCardHeight > 0 ? popup.availableCardHeight : popup.fittedContentHeight(Style.space(420))
+
+    Behavior on contentWidth {
+        enabled: popup.opened
+        NumberAnimation {
+            duration: Style.duration(200)
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on contentHeight {
+        enabled: popup.opened
+        NumberAnimation {
+            duration: Style.duration(200)
+            easing.type: Easing.OutCubic
+        }
+    }
 
     Item {
         anchors.fill: parent
 
         Keys.onPressed: event => {
+            if (event.key === Qt.Key_F11) {
+                popup.toggleFullscreen();
+                event.accepted = true;
+                return;
+            }
             if (event.key === Qt.Key_Escape) {
                 popup.close();
                 event.accepted = true;
@@ -62,7 +90,7 @@ KeyboardPanel {
             // Hero Header aligned with Battery's hero metrics
             Item {
                 Layout.fillWidth: true
-                implicitHeight: Math.max(heroIcon.implicitHeight, heroLabels.implicitHeight)
+                implicitHeight: Math.max(heroIcon.implicitHeight, heroLabels.implicitHeight, fullscreenButton.implicitHeight)
 
                 Text {
                     id: heroIcon
@@ -78,8 +106,8 @@ KeyboardPanel {
                     id: heroLabels
                     anchors.left: heroIcon.right
                     anchors.leftMargin: Style.space(14)
-                    anchors.right: parent.right
-                    anchors.rightMargin: Style.space(10)
+                    anchors.right: fullscreenButton.left
+                    anchors.rightMargin: Style.space(8)
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Style.space(2)
 
@@ -96,6 +124,17 @@ KeyboardPanel {
                         bar: popup.bar
                         active: popup.opened
                     }
+                }
+
+                PanelActionButton {
+                    id: fullscreenButton
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    iconText: popup.isFullscreen ? "\uf2d2" : "\uf2d0"
+                    tooltipText: popup.isFullscreen ? "Restore (F11)" : "Maximize (F11)"
+                    foreground: popup.bar ? popup.bar.foreground : Commons.Color.foreground
+                    fontFamily: popup.bar ? popup.bar.fontFamily : Style.font.family
+                    onClicked: popup.toggleFullscreen()
                 }
             }
 
@@ -115,6 +154,7 @@ KeyboardPanel {
                 selectedNoteIndex: popup.selectedNoteIndex
                 numrAvailable: popup.numrAvailable
                 statusText: popup.statusText
+                isFullscreen: popup.isFullscreen
 
                 onNewNoteClicked: popup.newNoteClicked()
                 onNewNoteRequested: popup.newNoteRequested()

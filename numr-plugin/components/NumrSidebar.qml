@@ -12,6 +12,7 @@ Item {
     property var bar                    // Exposes parent's Bar object (for style, fontFamily, foreground)
     property alias notesModel: notesList.model  // Aliases ListView's model to bind notes data
     property int selectedNoteIndex: 0   // Tracks the selected index for delegation sync
+    property bool isFullscreen: false
 
     onSelectedNoteIndexChanged: {
         notesList.currentIndex = root.selectedNoteIndex;
@@ -26,8 +27,15 @@ Item {
         notesList.forceActiveFocus();      // Preserves original Ctrl+Tab focus-switching
     }
 
-    Layout.preferredWidth: Style.space(190)
+    Layout.preferredWidth: root.isFullscreen ? Style.space(240) : Style.space(190)
     Layout.fillHeight: true
+
+    Behavior on Layout.preferredWidth {
+        NumberAnimation {
+            duration: Style.duration(200)
+            easing.type: Easing.OutCubic
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent

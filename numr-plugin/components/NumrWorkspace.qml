@@ -16,6 +16,7 @@ FocusScope {
     property bool numrAvailable: true          // Tracks CLI process status
     property string statusText: ""             // Feedback/error text shown in list header
     property var bar                           // Theming/styling constraints
+    property bool isFullscreen: false          // Tracks popup fullscreen state
 
     // --- Interface Signals ---
     signal newNoteClicked
@@ -74,6 +75,7 @@ FocusScope {
             bar: root.bar
             notesModel: root.notesModel
             selectedNoteIndex: root.selectedNoteIndex
+            isFullscreen: root.isFullscreen
             onNewNoteClicked: root.newNoteClicked()
             onSwitchNoteRequested: (index, focusEditor) => {
                 root.switchNoteRequested(index, focusEditor);
@@ -96,6 +98,7 @@ FocusScope {
             NumrEditor {
                 id: editor
                 bar: root.bar
+                isFullscreen: root.isFullscreen
                 onLineChanged: lineNum => {
                     root.editorLineChanged(lineNum);
                 }

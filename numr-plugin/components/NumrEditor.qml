@@ -12,6 +12,7 @@ ScrollView {
     property var bar                    // Exposes parent's Bar object (for style, fontFamily, foreground)
     property alias text: editor.text    // Binds scratch-pad text
     property alias editor: editor       // Exposes inner editor for external targeting/focus (e.g. focusTarget)
+    property bool isFullscreen: false   // Expands editor height when popup is fullscreen
 
     // --- Interface Signals ---
     signal lineChanged(int lineNum)     // Emitted when the active line number changes based on cursor position
@@ -22,7 +23,14 @@ ScrollView {
     }
 
     Layout.fillWidth: true
-    Layout.preferredHeight: Style.space(120)
+    Layout.preferredHeight: root.isFullscreen ? Style.space(280) : Style.space(120)
+
+    Behavior on Layout.preferredHeight {
+        NumberAnimation {
+            duration: Style.duration(200)
+            easing.type: Easing.OutCubic
+        }
+    }
     clip: true
 
     background: BorderSurface {

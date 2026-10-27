@@ -1,7 +1,10 @@
 [tasks.setup-dev]
 description = "Set up the .dev environment and configuration files"
 sources = ["mise.toml", "manifest.json", "flake.nix", "flake.lock"]
-outputs = [".dev/.config/omarchy/shell.json"]
+outputs = [
+  ".dev/.config/omarchy/shell.json",
+  ".dev/.local/state/omarchy/background-intro.session-id",
+]
 run = """
 if [ -z "$OMARCHY_PATH" ]; then
   echo -e "\\033[1;31mError: \\$OMARCHY_PATH is not defined in the shell environment.\\033[0m"
@@ -34,9 +37,13 @@ cat <<EOF > "$DEV_DIR/.config/omarchy/shell.json"
       ]
     }
   },
+  "disabledPlugins": ["omarchy.background", "omarchy.notifications", "omarchy.polkit", "omarchy.lock"],
   "plugins": []
 }
 EOF
+
+mkdir -p "$DEV_DIR/.local/state/omarchy"
+printf '%s\n' "${OMARCHY_SESSION_ID:-${HYPRLAND_INSTANCE_SIGNATURE:-dev-session}}" > "$DEV_DIR/.local/state/omarchy/background-intro.session-id"
 
 # Symlink our workspace repository into the isolated user plugins directory under .dev/.config/omarchy/plugins
 # This registers it as a third-party plugin which handles symbolic links natively
@@ -54,6 +61,9 @@ DEV_DIR="$PWD/.dev"
 # Isolate HOME to the .dev folder so we don't load/modify the user's real personal shell.json config and state
 export HOME="$DEV_DIR"
 
+mkdir -p "$DEV_DIR/.local/state/omarchy"
+printf '%s\n' "${OMARCHY_SESSION_ID:-${HYPRLAND_INSTANCE_SIGNATURE:-dev-session}}" > "$DEV_DIR/.local/state/omarchy/background-intro.session-id"
+
 # Export environments
 export OMARCHY_PATH="$DEV_DIR"
 export QS_CONFIG_PATH="$DEV_DIR/shell"
@@ -65,6 +75,10 @@ export QT_QUICK_BACKEND="${QT_QUICK_BACKEND:-software}"
 
 quickshell "$@"
 """
+
+[tasks.quickshell]
+description = "Launch QuickShell dev shell (alias for run-quickshell)"
+run = "mise run run-quickshell \"$@\""
 
 [tasks.lint]
 description = "Lint JavaScript and QML files"
