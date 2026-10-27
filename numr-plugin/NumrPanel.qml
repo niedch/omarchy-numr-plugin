@@ -125,22 +125,7 @@ Panel {
     function findModelIndexForLine(lineNum) {
         if (resultModel.count === 0)
             return -1;
-
-        var bestIdx = -1;
-        for (var i = 0; i < resultModel.count; i++) {
-            var row = resultModel.get(i);
-            if (!row)
-                continue;
-            if (row.line === lineNum) {
-                return i;
-            }
-            if (row.line < lineNum) {
-                bestIdx = i;
-            } else {
-                break;
-            }
-        }
-        return bestIdx;
+        return Math.max(0, Math.min(lineNum, resultModel.count - 1));
     }
 
     // Synchronize UI highlight with editor cursor row
@@ -166,34 +151,59 @@ Panel {
             return;
         }
         var gen = ++root.activeGeneration;
-        resultModel.clear();
         var lines = root.text.split("\n");
         var exprs = [];
+        var newRows = [];
         for (var i = 0; i < lines.length; i++) {
             var expr = lines[i].trim();
-            if (expr === "")
+            if (expr === "") {
+                newRows.push({
+                    line: i,
+                    expr: "",
+                    result: "",
+                    error: false,
+                    pending: false,
+                    isComment: false,
+                    isBlank: true
+                });
                 continue;
+            }
             var isComment = expr.charAt(0) === "#" || expr.indexOf("//") === 0;
             if (isComment) {
-                resultModel.append({
+                newRows.push({
                     line: i,
                     expr: expr,
                     result: "",
                     error: false,
                     pending: false,
-                    isComment: true
+                    isComment: true,
+                    isBlank: false
                 });
                 continue;
             }
             exprs.push(expr);
-            resultModel.append({
+            newRows.push({
                 line: i,
                 expr: expr,
                 result: "",
                 error: false,
                 pending: true,
-                isComment: false
+                isComment: false,
+                isBlank: false
             });
+        }
+
+        // Update in-place to avoid collapsing ListView count and scroll offset
+        var commonCount = Math.min(resultModel.count, newRows.length);
+        for (var j = 0; j < commonCount; j++) {
+            resultModel.set(j, newRows[j]);
+        }
+        if (resultModel.count > newRows.length) {
+            resultModel.remove(newRows.length, resultModel.count - newRows.length);
+        } else if (newRows.length > resultModel.count) {
+            for (var k = commonCount; k < newRows.length; k++) {
+                resultModel.append(newRows[k]);
+            }
         }
         if (exprs.length === 0) {
             root.busy = false;
@@ -246,7 +256,7 @@ Panel {
             var row = resultModel.get(i);
             if (!row)
                 continue;
-            if (row.isComment)
+            if (row.isComment || row.isBlank)
                 continue;
             if (valIdx >= vals.length)
                 break;
@@ -259,7 +269,8 @@ Panel {
                 result: isErr ? (v.message !== undefined ? String(v.message) : "error") : display,
                 error: isErr,
                 pending: false,
-                isComment: false
+                isComment: false,
+                isBlank: false
             });
             valIdx++;
         }
@@ -272,7 +283,7 @@ Panel {
 
     function copyResult(modelIndex) {
         var row = resultModel.get(modelIndex);
-        if (!row || row.isComment || row.error || row.pending || row.result === "")
+        if (!row || row.isComment || row.isBlank || row.error || row.pending || row.result === "")
             return;
         Quickshell.clipboardText = row.result;
         root.statusText = "copied " + row.result;
@@ -285,7 +296,9 @@ Panel {
             var row = resultModel.get(i);
             if (!row)
                 continue;
-            if (row.isComment) {
+            if (row.isBlank) {
+                parts.push("");
+            } else if (row.isComment) {
                 parts.push(row.expr);
             } else {
                 if (row.error || row.pending)

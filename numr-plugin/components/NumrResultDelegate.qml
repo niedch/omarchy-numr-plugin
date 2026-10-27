@@ -12,6 +12,7 @@ Rectangle {
     required property bool error
     required property bool pending
     required property bool isComment
+    required property bool isBlank
 
     // --- Configurable State and Styling ---
     property color foreground: "white"
@@ -21,22 +22,29 @@ Rectangle {
     // --- Signals ---
     signal clicked
 
+    FontMetrics {
+        id: fontMetrics
+        font.family: row.fontFamily
+        font.pixelSize: Style.font.body
+    }
+
     width: ListView.view.width
-    height: Style.space(28)
+    height: fontMetrics.lineSpacing
     radius: Style.cornerRadius
-    color: (ListView.isCurrentItem && !row.isComment) ? Util.alpha(row.foreground, 0.08) : (mouse.containsMouse && !row.isComment) ? Style.hoverFillFor(row.foreground, Color.accent) : "transparent"
+    color: (ListView.isCurrentItem && !row.isBlank && !row.isComment) ? Util.alpha(row.foreground, 0.08) : (mouse.containsMouse && !row.isBlank && !row.isComment) ? Style.hoverFillFor(row.foreground, Color.accent) : "transparent"
 
     MouseArea {
         id: mouse
         anchors.fill: parent
-        enabled: !row.isComment
-        hoverEnabled: !row.isComment
-        cursorShape: row.isComment ? Qt.ArrowCursor : Qt.PointingHandCursor
+        enabled: !row.isComment && !row.isBlank
+        hoverEnabled: !row.isComment && !row.isBlank
+        cursorShape: (row.isComment || row.isBlank) ? Qt.ArrowCursor : Qt.PointingHandCursor
         onClicked: row.clicked()
     }
 
     Text {
         id: exprText
+        visible: !row.isBlank
         anchors.left: parent.left
         anchors.leftMargin: Style.spacing.controlPaddingX
         anchors.right: row.isComment ? parent.right : resultText.left
@@ -52,7 +60,7 @@ Rectangle {
 
     Text {
         id: resultText
-        visible: !row.isComment
+        visible: !row.isComment && !row.isBlank
         anchors.right: parent.right
         anchors.rightMargin: Style.spacing.controlPaddingX
         anchors.verticalCenter: parent.verticalCenter

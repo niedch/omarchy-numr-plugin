@@ -9,15 +9,19 @@ ColumnLayout {
 
     // --- Interface Properties ---
     property var bar                    // Exposes styling constraints
+    property bool isFullscreen: false
     property bool numrAvailable: true   // Tracks CLI process presence
     property string statusText: ""      // Holds "evaluating...", "copied", or errors
     property alias resultModel: resultsList.model // Binds evaluation results data
     property alias currentIndex: resultsList.currentIndex
+    property alias flickable: resultsList
 
     function scrollToIndex(index) {
         if (index >= 0 && index < resultsList.count) {
             resultsList.currentIndex = index;
-            resultsList.positionViewAtIndex(index, ListView.Contain);
+            if (!root.isFullscreen) {
+                resultsList.positionViewAtIndex(index, ListView.Contain);
+            }
         } else {
             resultsList.currentIndex = -1;
         }
@@ -65,7 +69,9 @@ ColumnLayout {
             id: resultsList
             anchors.fill: parent
             clip: true
-            spacing: Style.space(4)
+            spacing: 0
+            topMargin: Style.spacing.inputPaddingY
+            bottomMargin: Style.spacing.inputPaddingY
             boundsBehavior: Flickable.StopAtBounds
             interactive: contentHeight > height
 

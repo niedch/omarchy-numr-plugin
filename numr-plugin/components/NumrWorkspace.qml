@@ -18,6 +18,58 @@ FocusScope {
     property var bar                           // Theming/styling constraints
     property bool isFullscreen: false          // Tracks popup fullscreen state
 
+    // --- Scroll Synchronization (Fullscreen side-by-side) ---
+    property bool _syncingScroll: false
+
+    onIsFullscreenChanged: {
+        if (isFullscreen && editor.flickable && resultsList.flickable) {
+            var targetY = editor.flickable.contentY + resultsList.flickable.originY;
+            var minY = resultsList.flickable.originY;
+            var maxY = minY + Math.max(0, resultsList.flickable.contentHeight - resultsList.flickable.height);
+            resultsList.flickable.contentY = Math.max(minY, Math.min(maxY, targetY));
+        }
+    }
+
+    Connections {
+        target: root.isFullscreen && editor.flickable ? editor.flickable : null
+        function onContentYChanged() {
+            if (root._syncingScroll || !root.isFullscreen || !resultsList.flickable)
+                return;
+            if (resultsList.flickable.moving && !editor.flickable.moving)
+                return;
+            var targetY = editor.flickable.contentY + resultsList.flickable.originY;
+            var minY = resultsList.flickable.originY;
+            var maxY = minY + Math.max(0, resultsList.flickable.contentHeight - resultsList.flickable.height);
+            targetY = Math.max(minY, Math.min(maxY, targetY));
+            if (Math.abs(resultsList.flickable.contentY - targetY) > 0.5) {
+                root._syncingScroll = true;
+                resultsList.flickable.contentY = targetY;
+                root._syncingScroll = false;
+            }
+        }
+    }
+
+    Connections {
+        target: root.isFullscreen && resultsList.flickable ? resultsList.flickable : null
+        function onContentYChanged() {
+            if (root._syncingScroll || !root.isFullscreen || !editor.flickable)
+                return;
+            if (resultsList.resultModel.count === 0 || resultsList.flickable.contentHeight <= resultsList.flickable.height)
+                return;
+            if (editor.flickable.moving || (editor.editor && editor.editor.activeFocus && !resultsList.flickable.moving))
+                return;
+            var targetY = resultsList.flickable.contentY - resultsList.flickable.originY;
+            var minY = editor.flickable.originY;
+            var maxY = minY + Math.max(0, editor.flickable.contentHeight - editor.flickable.height);
+            targetY = Math.max(minY, Math.min(maxY, targetY));
+            if (Math.abs(editor.flickable.contentY - targetY) > 0.5) {
+                root._syncingScroll = true;
+                editor.flickable.contentY = targetY;
+                root._syncingScroll = false;
+            }
+        }
+    }
+
     // --- Interface Signals ---
     signal newNoteClicked
     signal newNoteRequested
@@ -131,6 +183,7 @@ FocusScope {
                 Layout.fillHeight: true
                 Layout.preferredWidth: root.isFullscreen ? 1 : -1
                 bar: root.bar
+                isFullscreen: root.isFullscreen
                 numrAvailable: root.numrAvailable
                 statusText: root.statusText
                 resultModel: root.resultModel
